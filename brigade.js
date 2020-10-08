@@ -1,8 +1,6 @@
 const { events, Job } = require('brigadier');
 
-events.on('push', (e, p) => {
-
-    console.log(`NEW PUSH!!! ${JSON.stringify(e)}`);
+const generateJobtesting = (e, p) => {
 
     const jobTesting = new Job('job-testing', 'node:12-alpine');
     jobTesting.tasks = [
@@ -11,7 +9,56 @@ events.on('push', (e, p) => {
         'npm run test'
     ];
     jobTesting.streamLogs = true;
-    jobTesting.run();
+    return jobTesting;
+
+}
+
+const checkRequest = (e, p) => {
+
+    const imageName = 'brigadecore/brigade-github-check-run:latest';
+
+    const commonEnv = {
+        CHECK_PAYLOAD: e.payload,
+        CHECK_NAME: "Brigade",
+        CHECK_TITLE: "Running Tests",
+    };
+
+    const jobStartTest = new Job('start', imageName);
+    jobStartTest.env = {
+        ...commonEnv,
+        CHECK_SUMMARY: 'Iniciando tests'
+    };
+
+    const jobFinishTest = new Job('finish', imageName);
+    jobFinishTest.env = commonEnv;
+
+    jobStartTest.run().then(() => {
+
+        return generateJobtesting(e, p).run();
+
+    }).then(result => {
+
+        console.log('RESULT ', result);
+        jobFinishTest.env.CHECK_SUMMARY = 'Tests finalizados con éxito.'
+        jobFinishTest.env.CHECK_CONCLUSION = 'success';
+        jobFinishTest.run();
+
+    }).catch(err => {
+
+        console.error('ERROR ', err.message);
+        jobFinishTest.env.CHECK_SUMMARY = 'Tests finalizados sin éxito.'
+        jobFinishTest.env.CHECK_CONCLUSION = 'failure';
+        jobFinishTest.run();
+
+    });
+
+};
+
+/* events.on('push', (e, p) => {
+
+    console.log(`NEW PUSH!!! ${JSON.stringify(e)}`);
 
 });
-
+ */
+events.on("check_suite:rerequested", checkRequest);
+events.on("check_suite:requested", checkRequest);
