@@ -10,7 +10,7 @@ describe('GET /', function() {
 
         try {
 
-            expect(res.body.message).to.equal('Bye world');
+            expect(res.body.message).to.equal('Hello world');
 
             process.exit(0)
             

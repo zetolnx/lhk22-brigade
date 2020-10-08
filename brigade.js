@@ -62,3 +62,19 @@ const checkRequest = (e, p) => {
  */
 events.on("check_suite:rerequested", checkRequest);
 events.on("check_suite:requested", checkRequest);
+
+events.on('pull_request:opened', (e, p) => {
+
+    const jobSlack = new Job('slack', 'technosophos/slack-notify:latest');
+
+    jobSlack.env = {
+        SLACK_WEBHOOK: p.secrets.SLACK_WEBHOOK,
+        SLACK_USERNAME: "Brigade",
+        SLACK_TITLE: "Nuevo PR",
+        SLACK_MESSAGE: "Nuevo PR ha llegado",
+        SLACK_COLOR: "#FF00FF"
+    };
+
+    jobSlack.run();
+
+});
